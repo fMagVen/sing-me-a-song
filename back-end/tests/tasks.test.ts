@@ -1,4 +1,10 @@
 /*
+describe("isolation placeholder",()=>{
+	it("should pass the test",()=>{
+		expect(1).toBe(1)
+	})
+})
+*/
 
 import app from '../src/app.js'
 import {jest} from '@jest/globals'
@@ -146,5 +152,3 @@ describe("Recommendation tests", ()=>{
 
 	})
 })
-
-*/

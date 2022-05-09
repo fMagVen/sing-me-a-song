@@ -8,8 +8,8 @@
     "migratedev": "prisma migrate dev",
     "dev": "nodemon src/server.ts",
     "migratetest": "dotenv -e .env.test prisma migrate dev",
-    "e2etest": "dotenv -e .env.test nodemon src/server.ts",
-    "integunittests": "NODE_OPTIONS=--experimental-vm-modules dotenv -e .env.test jest -i"
+    "test:e2e": "dotenv -e .env.test nodemon src/server.ts",
+    "test:integunit": "NODE_OPTIONS=--experimental-vm-modules dotenv -e .env.test jest -i --coverage"
   },
   "keywords": [],
   "author": "",

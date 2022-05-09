@@ -6,138 +6,256 @@ import {jest} from '@jest/globals'
 
 describe("Recommendations Service Unit Tests",()=>{
 
-
-	beforeEach(()=>{
-		jest.clearAllMocks()
-		jest.resetAllMocks()
-	})
-
-
-	it("should reject a recommendation that already exists", async()=>{
-		const data = {
-			name: 'asd',
-			youtubeLink: 'dsa'
-		}
-		jest.spyOn(recommendationRepository, "findByName").mockResolvedValue({
-			id: 1,
-			name: 'asd',
-			youtubeLink: 'dsa',
-			score: 1
+	describe("insert()", ()=>{
+		beforeEach(()=>{
+			jest.clearAllMocks()
+			jest.resetAllMocks()
 		})
 
-		expect(async()=>{
-			await recommendationService.insert(data)
-		}).rejects.toEqual(conflictError("Recommendations names must be unique"))
+		it("should reject a recommendation that already exists", async()=>{
+			const data = {
+				name: 'asd',
+				youtubeLink: 'dsa'
+			}
+			jest.spyOn(recommendationRepository, "findByName").mockResolvedValue({
+				id: 1,
+				name: 'asd',
+				youtubeLink: 'dsa',
+				score: 1
+			})
+
+			expect(async()=>{
+				await recommendationService.insert(data)
+			}).rejects.toEqual(conflictError("Recommendations names must be unique"))
+		})
+
+		it("should add a new recommendation", async()=>{
+			const findRecommendation = jest.spyOn(recommendationRepository, "findByName").mockResolvedValue(null)
+
+			const expectedRecommendation: CreateRecommendationData = {
+				name: 'asd',
+				youtubeLink: 'dsa'
+			}
+			const createRecommendation = jest.spyOn(recommendationRepository, "create").mockResolvedValue(null)
+
+			await recommendationService.insert(expectedRecommendation)
+
+			expect(findRecommendation).toBeCalledTimes(1)
+			expect(createRecommendation).toBeCalledWith(expectedRecommendation)
+		})
 	})
 
-	it("should add a new recommendation", async()=>{
-		const findRecommendation = jest.spyOn(recommendationRepository, "findByName").mockResolvedValue(null)
-		
-		const expectedRecommendation: CreateRecommendationData = {
-			name: 'asd',
-			youtubeLink: 'dsa'
-		}
+	describe("upvote()", ()=>{
+		beforeEach(()=>{
+			jest.clearAllMocks()
+			jest.resetAllMocks()
+		})
 
-		const createRecommendation = jest.spyOn(recommendationRepository, "create")
+		it("should fail to find id of recommendation to be upvoted", async()=>{
+			jest.spyOn(recommendationRepository, "find").mockResolvedValue(null)
 
-		expect(findRecommendation).toBeCalledTimes(1)
-		expect(createRecommendation).toBeCalledWith(expectedRecommendation)
+			expect(async()=>{
+				await recommendationService.upvote(0)
+			}).rejects.toEqual(notFoundError(""))
+		})
+
+		it("should succeed to find id of recommendation to be upvoted and vote it", async()=>{
+			const recommendation: Recommendation = {
+				id: 1,
+				name: 'asd',
+				youtubeLink: 'dsa',
+				score: 1
+			}
+			const successToFindId = jest.spyOn(recommendationRepository, "find").mockResolvedValue(recommendation)
+			const updatedScore = jest.spyOn(recommendationRepository, "updateScore").mockResolvedValue(null)
+
+			await recommendationService.upvote(recommendation.id)
+
+			expect(successToFindId).toBeCalledTimes(1)
+			expect(updatedScore).toBeCalledTimes(1)
+		})
 	})
 
-	it("should fail to find id of recommendation to vote it", async()=>{
-		const failureToFindId = jest.spyOn(recommendationRepository, "find").mockResolvedValue(null)
-		expect(failureToFindId).toBeCalledTimes(1)
-		expect(async()=>{
-			await recommendationService.getById(0)
-		}).rejects.toEqual(notFoundError)
+	describe("downvote()", ()=>{
+		beforeEach(()=>{
+			jest.clearAllMocks()
+			jest.resetAllMocks()
+		})
+
+		it("should fail to find id of recommendation to be downvoted", async()=>{
+			
+			jest.spyOn(recommendationRepository, "find").mockResolvedValue(null)
+			expect(async()=>{
+				await recommendationService.downvote(0)
+			}).rejects.toEqual(notFoundError(""))
+		})
+
+		it("should succeed to find id of recommendation to be downvoted and vote it but not delete it", async()=>{
+			const recommendation: Recommendation = {
+				id: 1,
+				name: 'asd',
+				youtubeLink: 'dsa',
+				score: 0
+			}
+			const successToFindId = jest.spyOn(recommendationRepository, "find").mockResolvedValue(recommendation)
+			const downvoted = jest.spyOn(recommendationRepository, "updateScore").mockResolvedValue(recommendation)
+			const deleted = jest.spyOn(recommendationRepository, "remove")
+
+			await recommendationService.downvote(1)
+
+			expect(successToFindId).toBeCalledTimes(1)
+			expect(downvoted).toBeCalledWith(recommendation.id, "decrement")
+			expect(deleted).toBeCalledTimes(0)
+		})
+
+		it("should succeed to find id of recommendation to be downvoted, vote it and delete it", async()=>{
+			const recommendation: Recommendation = {
+				id: 1,
+				name: 'asd',
+				youtubeLink: 'dsa',
+				score: -6
+			}
+			const successToFindId = jest.spyOn(recommendationRepository, "find").mockResolvedValue(recommendation)
+			const downvoted = jest.spyOn(recommendationRepository, "updateScore").mockResolvedValue(recommendation)
+			const deleted = jest.spyOn(recommendationRepository, "remove")
+
+			await recommendationService.downvote(1)
+
+			expect(successToFindId).toBeCalledTimes(1)
+			expect(downvoted).toBeCalledWith(recommendation.id, "decrement")
+			expect(deleted).toBeCalledTimes(1)
+		})
 	})
 
-	it("should succeed to find id of recommendation to vote it", async()=>{
-		const recommendation: Recommendation = {
-			id: 1,
-			name: 'asd',
-			youtubeLink: 'dsa',
-			score: 1
-		}
-		const successToFindId = jest.spyOn(recommendationRepository, "find").mockResolvedValue(recommendation)
-		expect(successToFindId).toBeCalledTimes(1)
+	describe("get()", ()=>{
+		beforeEach(()=>{
+			jest.clearAllMocks()
+			jest.resetAllMocks()
+		})
+
+		it("should get all recommendations", async()=>{
+			const allRecommendations = jest.spyOn(recommendationRepository, "findAll").mockResolvedValue(null)
+			await recommendationService.get()
+			expect(allRecommendations).toBeCalledTimes(1)
+		})
 	})
 
-	it("should upvote a recommendation", async()=>{
-		const id = 1
-		const upvoted = jest.spyOn(recommendationRepository, "updateScore").mockResolvedValue(null)
-		expect(upvoted).toBeCalledWith(id, "increment")
+	describe("getTop()", ()=>{
+		beforeEach(()=>{
+			jest.clearAllMocks()
+			jest.resetAllMocks()
+		})
+
+		it("should get `amount` number of recommendations ranked by votes", async()=>{
+			const amount = 10
+			const getMeAmountRecommendations = jest.spyOn(recommendationRepository, "getAmountByScore").mockReturnValue(null)
+
+			await recommendationService.getTop(amount)
+			expect(getMeAmountRecommendations).toBeCalledWith(amount)
+		})
+
 	})
 
-	it("should downvote a recommendation, but not delete it", async()=>{
-		const recommendation: Recommendation = {
-			id: 1,
-			name: 'asd',
-			youtubeLink: 'dsa',
-			score: 1
-		}
-		const downvoted = jest.spyOn(recommendationRepository, "updateScore").mockResolvedValue(recommendation)
-		expect(downvoted).toBeCalledWith(recommendation.id, "decrement")
-	})
+	describe("getRandom() - nested functions", ()=>{
+		describe("getScoreFilter()", ()=>{
+			beforeEach(()=>{
+				jest.clearAllMocks()
+				jest.resetAllMocks()
+			})
 
-	it("should downvote a recommendation and delete it", async()=>{
-		const recommendation: Recommendation = {
-			id: 1,
-			name: 'asd',
-			youtubeLink: 'dsa',
-			score: -6
-		}
-		const downvoted = jest.spyOn(recommendationRepository, "updateScore").mockResolvedValue(recommendation)
-		const deleted = jest.spyOn(recommendationRepository, "remove")
-		expect(downvoted).toBeCalledWith(recommendation.id, "decrement")
-		expect(deleted).toBeCalledWith(recommendation.id)
-	})
+			it("should return 'gt' given number < 0.7", async()=>{
+				const filter = recommendationService.getScoreFilter(0.6)
+				expect(filter).toBe('gt')
+			})
+			it("should return 'gt' given number >= 0.7", async()=>{
+				const filter = recommendationService.getScoreFilter(0.8)
+				expect(filter).toBe('lte')
+			})
+		})
 
-	it("should get all recommendations", async()=>{
-		const allRecommendations = jest.spyOn(recommendationRepository, "findAll")
-		expect(allRecommendations).toBeCalledTimes(1)
-	})
+		describe("getByScore()",()=>{
+			beforeEach(()=>{
+				jest.clearAllMocks()
+				jest.resetAllMocks()
+			})
 
-	it("should get fixed amount of recommendations", async()=>{
-		const amount = 10
-		const getMeAmountRecommendations = jest.spyOn(recommendationRepository, "getAmountByScore")
-		expect(getMeAmountRecommendations).toBeCalledWith(amount)
-	})
+			it("should return recommendations given score filter if it is an array with length > 0",async()=>{
+				const recommendation = 
+				[
+					{
+						id: 1,
+						name: 'asd',
+						youtubeLink: 'dsa',
+						score: 0
+					}
+				]
+				const recommendations = jest.spyOn(recommendationRepository, "findAll").mockResolvedValue(
+					recommendation
+				)
 
-	it("should get 'gt' from filter if given params number is higher than 0.7", async()=>{
-		const filter = recommendationService.getScoreFilter(0.8)
-		expect(filter).toBe('gt')
-	})
+				const returnedRecommendations = await recommendationService.getByScore('gt')
+				expect(recommendations).toBeCalledTimes(1)
+				expect(returnedRecommendations).toBe(recommendation)
+			})
 
-	it("should get 'lte' from filter if given params number is lower than or equal to 0.7", async()=>{
-		const less = recommendationService.getScoreFilter(0.6)
-		const equal = recommendationService.getScoreFilter(0.7)
-		expect(less).toBe('lte')
-		expect(equal).toBe('lte')
-	})
+			it("should return findAll function given first call returned an array with length 0",async()=>{
+				
+				const fn = jest.spyOn(recommendationRepository, "findAll").mockResolvedValue([])
 
-	it("should return recommendations if it's array length is > 0", async()=>{
-		const recommendations = jest.spyOn(recommendationRepository, "findAll").mockResolvedValue([{
-			id: 1,
-			name: 'asd',
-			youtubeLink: 'dsa',
-			score: 1
-		}])
-		const calledGetByScore = recommendationService.getByScore('gt')
-		expect(recommendations).toBeCalledTimes(1)
-		expect(calledGetByScore).toBe(recommendations)
-	})
+				await recommendationService.getByScore('gt')
+				expect(fn).toBeCalledTimes(2)
+			})
+		})
 
-	it("should return the function that gets all recommendations if first try with scorefilter parameter returns array of length 0", async()=>{
-		const recommendations = jest.spyOn(recommendationRepository, "findAll").mockResolvedValue([])
-		const calledGetByScore = recommendationService.getByScore('gt')
-		expect(recommendations).toBeCalledTimes(1)
-		expect(calledGetByScore).toBe(recommendationRepository.findAll)
-	})
+		describe("getRandom() - process",()=>{
+			beforeEach(()=>{
+				jest.clearAllMocks()
+				jest.resetAllMocks()
+			})
+			it("should generate a random number, get score filter based on it and attempt to get a recommendation based on that and fail",async()=>{
+				const score = 'lte'
+				jest.spyOn(recommendationService, "getScoreFilter").mockReturnValue(score)
+				jest.spyOn(recommendationService, "getByScore").mockResolvedValue([])
+				jest.spyOn(recommendationRepository, "findAll").mockResolvedValue([])
+				expect(async()=>{
+					await recommendationService.getRandom()
+				}).rejects.toEqual(notFoundError(""))
+			
+			})
 
-	it("should truncate whole recommendations table",async()=>{
-		const truncate = jest.spyOn(recommendationService, "truncate")
-		expect(truncate).toBeCalledTimes(1)
+			it("should generate a random number, get score filter based on it and successfully get a recommendation based on that",async()=>{
+				const score = 'lte'
+
+				const recommendation = [
+					{
+						id: 1,
+						name: 'asd',
+						youtubeLink: 'dsa',
+						score: 5
+					}
+				]
+				jest.spyOn(recommendationService, "getScoreFilter").mockReturnValue(score)
+				jest.spyOn(recommendationService, "getByScore").mockResolvedValue(recommendation)
+				jest.spyOn(recommendationRepository, "findAll").mockResolvedValue(recommendation)
+				const returnedRecommendation = await recommendationService.getRandom()
+				expect(returnedRecommendation).toBe(recommendation[0])
+			})
+		})
+
+		describe("truncate()", ()=>{
+			it("should run the truncate function", async()=>{
+				const truncated = jest.spyOn(recommendationRepository, "truncate").mockResolvedValue(null)
+				await recommendationService.truncate()
+				expect(truncated).toBeCalledTimes(1)
+			})
+		})
 	})
-	
 })
+
+function mockRandomNumber(number: number) {
+	const mockMathRandom = Object.create(global.Math);
+	mockMathRandom.random = () => number;
+	global.Math = mockMathRandom;
+  
+	return mockMathRandom;
+  }
