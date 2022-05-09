@@ -1,0 +1,16 @@
+{
+	"songs": [
+		{	
+			"name": "synthwave",
+			"link": "https://www.youtube.com/watch?v=y2ECgOhoDGs"
+		},
+		{
+			"name": "lofi",
+			"link": "https://www.youtube.com/watch?v=1oahTaVIQvk"
+		},
+		{
+			"name": "skyrim",
+			"link": "https://www.youtube.com/watch?v=aK4JSwhdcdE"
+		}
+	]
+}
