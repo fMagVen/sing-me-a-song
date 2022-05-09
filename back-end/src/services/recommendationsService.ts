@@ -86,6 +86,10 @@ async function truncate(){
   await recommendationRepository.truncate()
 }
 
+async function seed(){
+  await recommendationRepository.seed()
+}
+
 export const recommendationService = {
   insert,
   upvote,
@@ -96,5 +100,6 @@ export const recommendationService = {
   getTop,
   truncate,
   getScoreFilter,
-  getByScore
+  getByScore,
+  seed
 };

@@ -73,6 +73,16 @@ async function truncate(){
   await prisma.$executeRaw`TRUNCATE TABLE recommendations`;
 }
 
+async function seed(){
+  await prisma.$executeRaw`
+  INSERT INTO recommendations ("name", "youtubeLink", "score")
+  VALUES
+  ('Chitãozinho E Xororó - Evidências', 'https://www.youtube.com/watch?v=ePjtnSPFWK8&ab_channel=CHXVEVO', 300),
+  ('Falamansa - Xote dos Milagres', 'https://www.youtube.com/watch?v=ePjtnSPFWK8&ab_channel=CHXVEVO', 0),
+  ('No time to dance', 'https://www.youtube.com/watch?v=6U-bI3On1Ww', -4)
+  `
+}
+
 export const recommendationRepository = {
   create,
   findAll,
@@ -81,5 +91,6 @@ export const recommendationRepository = {
   updateScore,
   getAmountByScore,
   remove,
-  truncate
+  truncate,
+  seed
 };

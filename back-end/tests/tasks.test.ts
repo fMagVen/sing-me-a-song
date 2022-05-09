@@ -152,3 +152,16 @@ describe("Recommendation tests", ()=>{
 
 	})
 })
+
+describe("e2e routers test",()=>{
+
+	it("should seed recommendations table successfully and return 200",async()=>{
+		const response = await supertest(app).post('/e2e/seed')
+		expect(response.status).toBe(200)
+	})
+
+	it("should truncate recommendations table successfully and return 200",async()=>{
+		const response = await supertest(app).post('/e2e/truncate')
+		expect(response.status).toBe(200)
+	})
+})

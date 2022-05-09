@@ -249,13 +249,13 @@ describe("Recommendations Service Unit Tests",()=>{
 				expect(truncated).toBeCalledTimes(1)
 			})
 		})
+
+		describe("seed()", ()=>{
+			it("should run the seed function", async()=>{
+				const sown = jest.spyOn(recommendationRepository, "seed").mockResolvedValue(null)
+				await recommendationService.seed()
+				expect(sown).toBeCalledTimes(1)
+			})
+		})
 	})
 })
-
-function mockRandomNumber(number: number) {
-	const mockMathRandom = Object.create(global.Math);
-	mockMathRandom.random = () => number;
-	global.Math = mockMathRandom;
-  
-	return mockMathRandom;
-  }

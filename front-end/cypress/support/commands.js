@@ -24,11 +24,11 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
-Cypress.Commands.add('addNew', (data)=>{
+Cypress.Commands.add('addRecommendation', (recommendation)=>{
 
 	//Act
-	cy.get("input[placeholder='Name']").type(data.name)
-	cy.get("input[placeholder='https://youtu.be/...'").type(data.link)
+	cy.get("input[placeholder='Name']").type(recommendation.name)
+	cy.get("input[placeholder='https://youtu.be/...'").type(recommendation.youtubeLink)
 	cy.intercept('POST', '/recommendations').as("create-recommendation")
 	cy.get('button').click()
 			
@@ -37,37 +37,63 @@ Cypress.Commands.add('addNew', (data)=>{
 
 })
 
-Cypress.Commands.add('upvote', (element, votes)=>{
-	cy.intercept('POST', /^\/recommendations\/[0-9]{1,}\/upvote$/).as('upvote')
-	cy.get('article').eq(element).as('article')
-	cy.get('@article').find('div').eq(3).as('div')
-	cy.get('@div').find('svg').eq(0).click()
-	cy.wait('@upvote')
-	cy.get('@div').contains(/^[0-9]{1,}$/).should(($div) => {
-		// access the native DOM element
-		expect($div.get(0).innerText).to.eq(votes)
-	  })
+Cypress.Commands.add('upvote', (recommendation)=>{
+
+	cy.contains(recommendation.name)
+	.get("article")
+	.within(()=>{
+		cy.get("div:last-of-type").should("have.text","0")
+	})
+
+	cy.contains(recommendation.name)
+    .get("article")
+    .within(() => {
+      cy.get("svg:first-of-type").click();
+    });
+
+  	cy.reload();
+
+	cy.contains(recommendation.name)
+    .get("article")
+    .within(() => {
+      cy.get("div:last-of-type").should("have.text", "1");
+    });
 })
 
-Cypress.Commands.add('downvote', (element, votes)=>{
-	cy.intercept('POST', /^\/recommendations\/[0-9]{1,}\/downvote$/).as('downvote')
-	cy.get('article').eq(element).as('article')
-	cy.get('@article').find('div').eq(3).as('div')
-	cy.get('@div').find('svg').eq(1).click()
-	cy.wait('@downvote')
-	cy.get('@div').contains(/^[0-9]{1,}$/).should(($div) => {
-		// access the native DOM element
-		expect($div.get(0).innerText).to.eq(votes)
-	  })
-})
+Cypress.Commands.add("downvote", (recommendation) => {
+  cy.contains(recommendation.name)
+    .get("article")
+    .within(() => {
+      cy.get("div:last-of-type").should("have.text", "0");
+    });
 
-Cypress.Commands.add('checkRank', (element, votes)=>{
-	cy.get('article').eq(element).as('article')
-	cy.get('@article').find('div').eq(3).as('div')
-	cy.get('@div').find('svg').eq(1).click()
-	cy.wait('@downvote')
-	cy.get('@div').contains(/^[0-9]{1,}$/).should(($div) => {
-		// access the native DOM element
-		expect($div.get(0).innerText).to.eq(votes)
-	  })
-})
+  cy.contains(recommendation.name)
+    .get("article")
+    .within(() => {
+      cy.get("svg:last-of-type").click();
+    });
+
+  cy.reload();
+
+  cy.contains(recommendation.name)
+    .get("article")
+    .within(() => {
+      cy.get("div:last-of-type").should("have.text", "-1");
+    });
+});
+
+Cypress.Commands.add("delete", (recommendation) => {
+	Cypress._.times(6, () => {
+	  cy.contains(recommendation.name)
+		.get("article")
+		.within(() => {
+		  cy.get("svg:last-of-type").click();
+		});
+	});
+  });
+
+  Cypress.Commands.add("alertTest", () => {
+	cy.on("window:alert", (text) => {
+	  expect(text).to.contains("Error creating recommendation!");
+	});
+  });
